@@ -16,6 +16,7 @@ interface ContentWindowProps {
   playSelectedNodeAudio: () => void;
   setLanguage: (lang: 'en' | 'de') => void;
   selectedContent: string;
+  className?: string;
 }
 
 const ContentWindow: React.FC<ContentWindowProps> = ({
@@ -25,11 +26,12 @@ const ContentWindow: React.FC<ContentWindowProps> = ({
   playSelectedNodeAudio,
   setLanguage,
   selectedContent,
+  className,
 }) => {
   if (!selectedNode) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 w-80 h-36 rounded-lg p-4 backdrop-blur-sm bg-black/80 border border-white/20 overflow-y-auto z-40">
+    <div className={`fixed bottom-4 left-4 w-80 h-36 rounded-lg p-4 backdrop-blur-sm bg-black/80 border border-white/20 overflow-y-auto z-40 ${className}`}>
       <div className="h-full flex flex-col">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-lg font-bold">{selectedNode.data.key}</h3>
