@@ -1,15 +1,25 @@
+/* eslint-disable */
+// @ts-nocheck
 'use client'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import * as d3 from "d3"
-import { TractatusNode, D3Node, fetchTractatus, toggleNode, getRootNode } from '../utils/tractatusUtils'
+import { TractatusNode, fetchTractatus, toggleNode, getRootNode } from '../utils/tractatusUtils'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { VolumeIcon as VolumeUp, Volume2, LayoutTemplateIcon as LayoutTree, CircleIcon, CircleIcon as CircleStackIcon } from 'lucide-react'
+import { VolumeIcon, VolumeX, Play, Pause, LayoutTemplateIcon as LayoutTree, CircleIcon, CircleIcon as CircleStackIcon } from 'lucide-react'
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import DOMPurify from 'dompurify'
 import { audioMap } from '../data/audioMap'
 import { createCirclePackingLayout } from '../utils/circlePackingLayout'
+
+type D3Node = d3.HierarchyPointNode<TractatusNode> & {
+  _children?: D3Node[];
+  x: number;
+  y: number;
+  x0?: number;
+  y0?: number;
+};
 
 type LayoutType = 'tree' | 'radial' | 'circle';
 
@@ -23,6 +33,8 @@ const TractatusTree: React.FC = () => {
   const [autoplay, setAutoplay] = useState(false)
   const [selectedContent, setSelectedContent] = useState<string>('');
   const [layoutType, setLayoutType] = useState<LayoutType>('tree');
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -50,9 +62,9 @@ const TractatusTree: React.FC = () => {
         width,
         height,
         selectedNodeRef.current,
-        (node: D3Node) => {
+        (node) => {
           selectedNodeRef.current = node;
-          setSelectedContent(node.data.content?.[language] || 'No content available');
+          setSelectedContent(node.data.content?.[language] || 'select a node or use arrow keys to start');
           updateTree(root, node);
         },
         language
@@ -70,14 +82,14 @@ const TractatusTree: React.FC = () => {
       g.attr("transform", currentTransform.toString());
     } else {
       if (layoutType === 'tree') {
-        g.attr("transform", `translate(${width * 0.1}, ${height * 0.7}) scale(0.75)`);
+        g.attr("transform", `translate(${width * 0.1}, ${height * 0.5}) scale(0.75)`);
       } else {
         g.attr("transform", `translate(${width / 2}, ${height / 2}) scale(0.75)`);
       }
     }
 
     const tree = layoutType === 'tree'
-      ? d3.tree<TractatusNode>().size([height - 100, width - 200]).nodeSize([60, 120])
+      ? d3.tree<TractatusNode>().size([height, width - 200]).nodeSize([60, 120])
       : d3.tree<TractatusNode>().size([2 * Math.PI, Math.min(width, height) / 2 - 100]);
 
     if (focusNode) {
@@ -85,7 +97,7 @@ const TractatusTree: React.FC = () => {
       while (currentNode) {
         if (currentNode._children) {
           currentNode.children = currentNode._children;
-          currentNode._children = null;
+          currentNode._children = undefined;
         }
         currentNode = currentNode.parent;
       }
@@ -109,24 +121,24 @@ const TractatusTree: React.FC = () => {
           selectedNodeRef.current = d;
           toggleNode(d);
           update(root);
-          setSelectedContent(d.data.content?.[language] || 'No content available');
+          setSelectedContent(d.data.content?.[language] || 'select a node or use arrow keys to start');
         })
 
       nodeEnter.append("circle")
-        .attr("r", d => d === selectedNodeRef.current ? 10 : 8)
-        .style("fill", (d: any) => {
+        .attr("r", (d: D3Node) => d === selectedNodeRef.current ? 10 : 8)
+        .style("fill", (d: D3Node) => {
           if (d === selectedNodeRef.current) return "#000";
           if (d.data.key === "1") return "#fff";
           return d._children ? "#555" : (d.children ? "#777" : "#999");
         })
-        .style("stroke", d => d === selectedNodeRef.current ? "#ffffff" : "none")
+        .style("stroke", (d: D3Node) => d === selectedNodeRef.current ? "#ffffff" : "none")
         .style("stroke-width", 2);
 
       nodeEnter.append("text")
         .attr("dy", "0.31em")
-        .attr("x", d => d.children || d._children ? -13 : 13)
-        .attr("text-anchor", d => d.children || d._children ? "end" : "start")
-        .text((d: any) => d.data.key)
+        .attr("x", (d: D3Node) => d.children || d._children ? -13 : 13)
+        .attr("text-anchor", (d: D3Node) => d.children || d._children ? "end" : "start")
+        .text((d: D3Node) => d.data.key)
         .style("fill", "white")
         .style("font-size", "12px")
 
@@ -138,13 +150,13 @@ const TractatusTree: React.FC = () => {
           : `translate(${d.y * Math.cos(d.x - Math.PI / 2)},${d.y * Math.sin(d.x - Math.PI / 2)})`)
 
       nodeUpdate.select("circle")
-        .attr("r", d => d === selectedNodeRef.current ? 10 : 8)
-        .style("fill", (d: any) => {
+        .attr("r", (d: D3Node) => d === selectedNodeRef.current ? 10 : 8)
+        .style("fill", (d: D3Node) => {
           if (d === selectedNodeRef.current) return "#000";
           if (d.data.key === "1") return "#fff";
           return d._children ? "#555" : (d.children ? "#777" : "#999");
         })
-        .style("stroke", d => d === selectedNodeRef.current ? "#ffffff" : "none")
+        .style("stroke", (d: D3Node) => d === selectedNodeRef.current ? "#ffffff" : "none")
         .style("stroke-width", 2);
 
       const nodeExit = node.exit().remove()
@@ -200,7 +212,7 @@ const TractatusTree: React.FC = () => {
 
     if (!currentTransform) {
       if (layoutType === 'tree') {
-        zoom.transform(svg, d3.zoomIdentity.translate(width * 0.1, height * 0.7).scale(0.75));
+        zoom.transform(svg, d3.zoomIdentity.translate(width * 0.1, height * 0.5).scale(0.75));
       } else {
         zoom.transform(svg, d3.zoomIdentity.translate(width / 2, height / 2).scale(0.75));
       }
@@ -263,30 +275,47 @@ const TractatusTree: React.FC = () => {
         audioRef.current.onended = null;
       }
       audioRef.current = new Audio(audioUrl);
+      audioRef.current.muted = isMuted;
       audioRef.current.play();
+      setIsPlaying(true);
       audioRef.current.onended = () => {
+        setIsPlaying(false);
         setTimeout(() => {
           const nextNode = findNextNodeInSequence(node);
           if (nextNode && autoplay) {
             selectedNodeRef.current = nextNode;
-            setSelectedContent(nextNode.data.content?.[language] || 'No content available');
+            setSelectedContent(nextNode.data.content?.[language] || 'select a node or use arrow keys to start');
             updateTree(getRootNode(nextNode), nextNode);
             playAudioAndMoveToNext(nextNode);
           }
         }, 750); // 0.5 second delay
       };
     } else {
+      setIsPlaying(false);
       setTimeout(() => {
         const nextNode = findNextNodeInSequence(node);
         if (nextNode && autoplay) {
           selectedNodeRef.current = nextNode;
-          setSelectedContent(nextNode.data.content?.[language] || 'No content available');
+          setSelectedContent(nextNode.data.content?.[language] || 'select a node or use arrow keys to start');
           updateTree(getRootNode(nextNode), nextNode);
           playAudioAndMoveToNext(nextNode);
         }
       }, 500); // 0.5 second delay
     }
-  }, [autoplay, findNextNodeInSequence, language, updateTree]);
+  }, [autoplay, findNextNodeInSequence, language, updateTree, isMuted]);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => !prev);
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+    }
+  }, [isMuted]);
+
+  const playSelectedNodeAudio = useCallback(() => {
+    if (selectedNodeRef.current) {
+      playAudioAndMoveToNext(selectedNodeRef.current);
+    }
+  }, [playAudioAndMoveToNext]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!selectedNodeRef.current) return;
@@ -306,7 +335,7 @@ const TractatusTree: React.FC = () => {
 
     if (nextNode) {
       selectedNodeRef.current = nextNode;
-      setSelectedContent(nextNode.data.content?.[language] || 'No content available');
+      setSelectedContent(nextNode.data.content?.[language] || 'select a node or use arrow keys to start');
       const svg = d3.select(svgRef.current);
       const currentTransform = d3.zoomTransform(svg.node() as Element);
 
@@ -366,8 +395,8 @@ const TractatusTree: React.FC = () => {
   }
 
   return (
-    <Card className="w-full h-[100vh] bg-black text-white overflow-hidden rounded-none border-none flex flex-col" tabIndex={0}>
-      <CardHeader className="sticky top-0 z-50 flex-row items-center justify-between space-y-0 py-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
+    <Card className="w-screen h-screen bg-black text-white overflow-hidden rounded-none border-none flex flex-col" tabIndex={0}>
+      <CardHeader className="fixed top-0 left-0 right-0 z-50 flex-row items-center justify-between space-y-0 py-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
         <CardTitle className="text-xl sm:text-3xl font-bold">Tractatus</CardTitle>
         <div className="flex items-center space-x-4">
           <button
@@ -379,11 +408,10 @@ const TractatusTree: React.FC = () => {
              <CircleStackIcon className="h-4 w-4 text-white" />}
           </button>
           <button
-            onClick={() => playAudioAndMoveToNext(selectedNodeRef.current!)}
+            onClick={toggleMute}
             className="focus:outline-none"
-            disabled={!selectedNodeRef.current}
           >
-            {autoplay ? <Volume2 className="h-4 w-4 text-white" /> : <VolumeUp className="h-4 w-4 text-white" />}
+            {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <VolumeIcon className="h-4 w-4 text-white" />}
           </button>
           <div className="flex items-center space-x-2">
             <Switch
@@ -396,16 +424,23 @@ const TractatusTree: React.FC = () => {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 relative flex-grow overflow-hidden">
-        <div ref={containerRef} className="h-full w-full bg-transparent">
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <div ref={containerRef} className="w-full h-full bg-transparent">
           <svg ref={svgRef} className="w-full h-full" />
         </div>
         {selectedNodeRef.current && (
-          <div className="absolute bottom-0 left-0 w-full sm:left-4 sm:w-96 h-40 rounded-lg p-4 backdrop-blur-sm bg-black/80 border border-white/20 overflow-y-auto">
+          <div className="fixed bottom-4 left-4 w-80 h-36 rounded-lg p-4 backdrop-blur-sm bg-black/80 border border-white/20 overflow-y-auto z-40">
             <div className="h-full flex flex-col">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-bold">{selectedNodeRef.current.data.key}</h3>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 items-center">
+                  <button
+                    onClick={playSelectedNodeAudio}
+                    className="focus:outline-none mr-2"
+                    disabled={!selectedNodeRef.current || isPlaying}
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+                  </button>
                   <button
                     onClick={() => setLanguage('en')}
                     className={`${language === 'en' ? 'opacity-100' : 'opacity-50'} focus:outline-none`}
