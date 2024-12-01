@@ -32,7 +32,7 @@ class FilestackUploader:
 
 def process_mp3_files():
     # Configuration
-    API_KEY = "AF4oXpqg4Re273cqEA0Hgz"
+    API_KEY = ""
     MP3_DIR = Path("tractatus_audio")
     OUTPUT_FILE = "mp3_links.txt"
     

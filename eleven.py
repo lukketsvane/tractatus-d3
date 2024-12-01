@@ -105,7 +105,7 @@ class ElevenLabsGenerator:
 
 def process_tractatus_to_speech():
     # Configuration
-    API_KEY = "sk_3e09d2445d73884ece5fbd1d97441b413522a1e5e5660acc"
+    API_KEY = ""
     VOICE_ID = "A9evEp8yGjv4c3WsIKuY"
     INPUT_FILE = "tractatus-english.json"
     OUTPUT_DIR = Path("tractatus_audio")
