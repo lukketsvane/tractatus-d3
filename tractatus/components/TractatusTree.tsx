@@ -136,12 +136,11 @@ const TractatusTree: React.FC = () => {
         .style("stroke-width", 2);
 
       nodeEnter.append("text")
-        .attr("dy", "0.31em")
-        .attr("x", (d: D3Node) => d.children || d._children ? -13 : 13)
-        .attr("text-anchor", (d: D3Node) => d.children || d._children ? "end" : "start")
+        .attr("dy", "-1.2em")
+        .attr("text-anchor", "middle")
         .text((d: D3Node) => d.data.key)
         .style("fill", "white")
-        .style("font-size", "12px")
+        .style("font-size", "12px");
 
       const nodeUpdate = node.merge(nodeEnter as any)
 
@@ -169,10 +168,14 @@ const TractatusTree: React.FC = () => {
         .attr("class", "link")
         .attr("d", d => layoutType === 'tree' ? diagonal(d.source, d.target) : radialDiagonal(d.source, d.target))
         .style("stroke", "white")
-        .style("stroke-width", "2px")
+        .style("stroke-width", "2px");
 
       link.merge(linkEnter as any)
         .attr("d", d => layoutType === 'tree' ? diagonal(d.source, d.target) : radialDiagonal(d.source, d.target))
+        .style("opacity", (d: any) => {
+          const isSelected = d.target === selectedNodeRef.current || d.source === selectedNodeRef.current;
+          return isSelected ? 1 : 0.3;
+        });
 
       link.exit().remove()
 
@@ -430,6 +433,7 @@ const TractatusTree: React.FC = () => {
           <svg ref={svgRef} className="w-full h-full" />
         </div>
         <ContentWindow
+          className="fixed bottom-0 left-0 w-full sm:w-80 sm:left-4 sm:bottom-4"
           selectedNode={selectedNodeRef.current}
           language={language}
           isPlaying={isPlaying}
