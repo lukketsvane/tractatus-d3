@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import DOMPurify from 'dompurify'
 import { audioMap } from '../data/audioMap'
-import { createCirclePackingLayout } from '../utils/circlePackingLayout'
+import { createCirclePackingLayout } from '../utils/circleUtils'
+import ContentWindow from './ContentWindow';
 
 type D3Node = d3.HierarchyPointNode<TractatusNode> & {
   _children?: D3Node[];
@@ -359,7 +360,7 @@ const TractatusTree: React.FC = () => {
     };
   }, [autoplay, selectedNodeRef, playAudioAndMoveToNext]);
 
-  useEffect(() =>{
+  useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -395,7 +396,7 @@ const TractatusTree: React.FC = () => {
   }
 
   return (
-    <Card className="w-screen h-screen bg-black text-white overflow-hidden rounded-none border-none flex flex-col" tabIndex={0}>
+    <Card className="w-[100vw] h-screen bg-black text-white overflow-hidden rounded-none border-none flex flex-col" tabIndex={0}>
       <CardHeader className="fixed top-0 left-0 right-0 z-50 flex-row items-center justify-between space-y-0 py-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
         <CardTitle className="text-xl sm:text-3xl font-bold">Tractatus</CardTitle>
         <div className="flex items-center space-x-4">
@@ -428,41 +429,14 @@ const TractatusTree: React.FC = () => {
         <div ref={containerRef} className="w-full h-full bg-transparent">
           <svg ref={svgRef} className="w-full h-full" />
         </div>
-        {selectedNodeRef.current && (
-          <div className="fixed bottom-4 left-4 w-80 h-36 rounded-lg p-4 backdrop-blur-sm bg-black/80 border border-white/20 overflow-y-auto z-40">
-            <div className="h-full flex flex-col">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold">{selectedNodeRef.current.data.key}</h3>
-                <div className="flex space-x-2 items-center">
-                  <button
-                    onClick={playSelectedNodeAudio}
-                    className="focus:outline-none mr-2"
-                    disabled={!selectedNodeRef.current || isPlaying}
-                  >
-                    {isPlaying ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
-                  </button>
-                  <button
-                    onClick={() => setLanguage('en')}
-                    className={`${language === 'en' ? 'opacity-100' : 'opacity-50'} focus:outline-none`}
-                  >
-                    EN
-                  </button>
-                  <button
-                    onClick={() => setLanguage('de')}
-                    className={`${language === 'de' ? 'opacity-100' : 'opacity-50'} focus:outline-none`}
-                  >
-                    DE
-                  </button>
-                </div>
-              </div>
-              <div className="flex-grow overflow-y-auto">
-                <p className="text-sm">
-                  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedContent) }} />
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <ContentWindow
+          selectedNode={selectedNodeRef.current}
+          language={language}
+          isPlaying={isPlaying}
+          playSelectedNodeAudio={playSelectedNodeAudio}
+          setLanguage={setLanguage}
+          selectedContent={selectedContent}
+        />
       </CardContent>
       <style jsx global>{`
         .switch[data-state="checked"] .switch-thumb {
