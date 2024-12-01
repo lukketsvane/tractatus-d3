@@ -1,16 +1,6 @@
 import './globals.css'
-import localFont from 'next/font/local'
+import { GeistMono } from 'geist/font/mono'
 import type { Metadata } from 'next'
-
-const geistSans = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-})
-
-const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
-})
 
 export const metadata: Metadata = {
   title: 'Tractatus Tree',
@@ -36,13 +26,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans bg-background text-foreground">
+    <html lang="en" className={GeistMono.className}>
+      <body className="bg-background text-foreground">
         {children}
       </body>
     </html>
   )
 }
-
-
 

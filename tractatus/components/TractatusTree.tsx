@@ -142,6 +142,21 @@ const TractatusTree: React.FC = () => {
         .style("fill", "white")
         .style("font-size", "12px");
 
+      // Add content text for leaf nodes
+      nodeEnter.filter(d => !d.children && !d._children) // UPDATED LINE
+        .append("text")
+        .attr("dy", "0.31em")
+        .attr("x", 20)
+        .attr("text-anchor", "start")
+        .text((d: D3Node) => {
+          const content = d.data.content?.[language] || '';
+          const strippedContent = content.replace(/<[^>]*>/g, '');
+          return strippedContent.length > 75 ? strippedContent.substring(0, 72) + '...' : strippedContent;
+        })
+        .style("fill", "white")
+        .style("font-size", "12px")
+        .style("opacity", 0.7);
+
       const nodeUpdate = node.merge(nodeEnter as any)
 
       nodeUpdate
